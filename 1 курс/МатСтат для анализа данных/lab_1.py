@@ -14,37 +14,66 @@ arr = [0.74, 4.28, 7.10, 7.54, 1.77, 4.53, 5.48, 6.72, 5.38, 0.81,
 arr.sort()
 n = len(arr)
 
-k = math.ceil(1 + 3.322 * math.log10(n))
-step = (arr[-1] - arr[0]) / k
+k = round(1 + 3.322 * math.log10(n))
+x_min = arr[0]
+x_max = arr[-1]
+h = math.ceil((x_max - x_min) / k * 100) / 100
 
-sum = 0
-sum_q = 0
-for i in range(len(arr)):
-    sum += arr[i]
-    sum_q += arr[i] ** 2
+edges = [round(x_min + i * h, 2) for i in range(k + 1)]
+counts = [0] * k
+for x in arr:
+    for i in range(k):
+        left_ok = x >= edges[i] if i == 0 else x > edges[i]
+        if left_ok and x <= edges[i + 1]:
+            counts[i] += 1
+            break
 
-x_mean = sum / n
-x_q_mean = sum_q / n
+w = []
+x_mids = []
+nixi = 0
+nixi2 = 0
+for i in range(k):
+    w.append(counts[i] / n)
+    x_mids.append((edges[i] + edges[i + 1]) / 2)
+    nixi += counts[i] * x_mids[i]
+    nixi2 += counts[i] * x_mids[i] ** 2
+
+x_mean = nixi / n
+x_q_mean = nixi2 / n
 
 sigma_q = x_q_mean - x_mean ** 2
 sigma = sigma_q ** 0.5
 
-s_x = n/(n-1) * sigma_q
-s_x2 = s_x ** 0.5
+s_x2 = n/(n-1) * sigma_q
+s_x = s_x2 ** 0.5
 
 print(f"Отсортированный массив: {arr}\n")
-print(f"Размер шага: {step:.4f}\n")
+
+for i in range(k):
+    print(f"({edges[i]:.4f}; {edges[i+1]:.4f}]  n_i = {counts[i]}  "
+          f"w_i = {w[i]:.4f}  x~ = {x_mids[i]:.4f}  "
+          f"n*x~ = {counts[i]*x_mids[i]:.4f}  " 
+          f"x~^2 = {x_mids[i]**2:.4f}  "
+          f"n*x~^2 = {counts[i]*x_mids[i]**2:.4f}  "
+          f"w_i/h = {w[i]/h:.4f}")
+
+print(f"\nРазмер шага: {h:.4f}\n")
 print(f"Среднее значение: {x_mean:.4f}\n")
 print(f"Среднее значение квадратов: {x_q_mean:.4f}\n")
-print(f"Сумма квадратов: {sum_q:.4f}\n")
+print(f"Сумма: {nixi:.4f}, Сумма квадратов: {nixi2:.4f}\n")
 print(f"Дисперсия: {sigma_q:.4f}\n")
 print(f"Среднее квадратичное отклонение: {sigma:.4f}\n")
-print(f"Несмещенная дисперсия: {s_x:.4f}\n")
-print(f"Несмещенное среднее квадратичное отклонение: {s_x2:.4f}\n")
+print(f"Несмещенная дисперсия: {s_x2:.4f}\n")
+print(f"Несмещенное среднее квадратичное отклонение: {s_x:.4f}\n")
 
-edges = [arr[0] + i * step for i in range(k + 1)]
-edges[-1] = arr[-1]
-plt.hist(arr, bins=edges, edgecolor='black')
-plt.xlabel('x'); plt.ylabel('Частота $n_i$')
+heights = [w[i] / h for i in range(k)]
+
+plt.bar(x_mids, heights, width=h, edgecolor='black', color='lightsteelblue')
+
+plt.xticks(edges, rotation=45)
+plt.xlabel('x_i')
+plt.ylabel('w_i / h')
 plt.title('Гистограмма')
+plt.grid(axis='y', alpha=0.3)
+plt.tight_layout()
 plt.show()
